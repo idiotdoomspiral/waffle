@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import config, debrid, memes, tv_movies, puzzle, chatbot, wiki, insult
+import weather
 import datetime, random, requests, json, loki, db
 import discord
 import asyncio, subprocess
@@ -84,7 +85,22 @@ async def on_message(message):
 # memes
     if any(message.content.startswith(word) for word in wordlist_imgs):
         await message.channel.send(db.meme_db(message.content[1:]))
-
+    if any(message.content.startswith(word) for word in wordlist_animal):
+        if message.content.startswith("!dog"):
+            await message.channel.send(memes.dog_pic())
+        else:
+            await message.channel.send(memes.cat_pic(message.content[1:]))
+           
+# puzzle
+    if any(message.content.startswith(word) for word in wordlist_puzzle):
+        loki.log('info', 'bot.on_message', f"{message.author}: {message.content}")
+        if message.content.startswith('!setprompt'):
+            puzzle.set_prompt(message.content[11:])
+            prompt = puzzle.get_prompt()
+            await message.channel.send(f'Prompt set:\n```{prompt}```')
+        elif message.content.startswith('!prompt'):
+            prompt = puzzle.get_prompt()
+            await message.channel.send(f'```{prompt}```')
 # insults/compliments
     if any(message.content.startswith(word) for word in wordlist_insult):
         if message.content.startswith("!insult"):
@@ -93,7 +109,14 @@ async def on_message(message):
         if message.content.startswith("!comp"):
             loki.log('info', 'bot.comp', f"{message.author} is complimenting {message.content[8:]}.")
             await message.channel.send(insult.compliment(message.content[6:]))
-
+# weather
+    if any(message.content.startswith(word) for word in wordlist_weather):
+        weather = weather.get_weather(message.content[9:])
+        em_weather = discord.Embed()
+        em_weather.set_footer(text=em_footer)
+        em_weather.set_author(name=weather['name'])
+        em_weather.description = f"Temp: {weather['main']['temp']}F | {weather['weather'][0]['description']}\nWind: {weather['wind']['speed']} | Humidity: {weather['main']['humidity']}%"
+        await message.channel.send(embed=em_weather)
 # system commands
     if any(message.content.startswith(word) for word in wordlist_system):
         loki.log('info', 'bot.on_message', f"{message.author}: {message.content}")
